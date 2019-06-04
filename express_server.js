@@ -12,7 +12,7 @@ const urlDatabase = {
 
 function generateRandomString() {
   let randomStr = "";
-  while (randomStr.length < 6) {
+  while (randomStr.length < 6 || urlDatabase[randomStr.substring(0, 6)]) {
     randomStr = Math.random().toString(36).replace('0.', '');
   }
   return randomStr.substring(0, 6);
