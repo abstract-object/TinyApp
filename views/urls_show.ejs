@@ -6,11 +6,7 @@
 <body style="font-size:20px; padding:50px;">
     <!-- Add EJS code here -->
     <h1>TinyApp</h1>
-    <ul>
-    <% for (let url in urls) { %>
-    <li><%= url %>: <%= urls[url] %></li>
-    <% } %>
-    </ul>
+    <p><%= shortURL %> is for <%= longURL %></p>
 
     <a href="#">Create a new url</a>
 </body>
