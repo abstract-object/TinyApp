@@ -1,18 +1,19 @@
 <h1>TinyApp</h1>
-<a href="/urls/new">Create a new url</a>
-
-<% if (!username) { %>
-     <form class="form-inline" action="/login" method="POST">
-       <div class="form-group mb-2">
-         <label for="Username">Login:</label>
-         <input class="form-control" type="text" name="username" placeholder="Username" style="width: 300px; margin: 1em">
-         <button type="submit" class="btn btn-primary">Submit</button>
-       </div>
-     </form>
-<% } else { %>
-     <form method="POST" action="/logout">
-       Hello, <%= username %><br>
-       <button type="submit" class="btn btn-primary">Logout</button>
-     </form>
-<% } %>
-<br>
+<form method="GET" action="/urls/new"><button type="submit" class="btn btn-primary">Create a new url</button></form>
+<span class="btn-group" role="group" aria-label="Account options">
+  <form method="GET" action="/register">
+    <button type="submit" class="btn btn-primary">Register</button>
+  </form>
+  &nbsp;
+  <% if (!user) { %>
+       <form method="GET" action="/login">
+         <button type="submit" class="btn btn-primary">Login</button>
+       </form>
+  <% } else { %>
+       <form method="POST" action="/logout">
+         <%= user.email %><br>
+         <button type="submit" class="btn btn-primary">Logout</button>
+       </form>
+  <% } %>
+</span>
+<br><br>

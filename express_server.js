@@ -37,12 +37,28 @@ function addLongURL(shortURL, longURL) {
   urlDatabase[shortURL] += longURL;
 }
 
+function checkEmailExists(address) {
+  let userList = Object.keys(users);
+
+  for (let user of userList) {
+    if (users[user].email === address) {
+      return [true, user];
+    }
+  }
+  return [false, null];
+}
+
 app.get("/", (req, res) => {
   res.send("Hello!");
 });
 
+app.get("/login", (req, res) => {
+  let templateVars = {user: users[req.cookies["user_id"]]};
+  res.render("login", templateVars);
+})
+
 app.get("/register", (req, res) => {
-  let templateVars = {username: req.cookies["username"]};
+  let templateVars = {user: users[req.cookies["user_id"]]};
   res.render("register", templateVars);
 });
 
@@ -53,20 +69,20 @@ app.get("/u/:shortURL", (req, res) => {
 
 app.get("/urls", (req, res) => {
   let templateVars = {
-    username: req.cookies["username"],
+    user: users[req.cookies["user_id"]],
     urls: urlDatabase
   };
   res.render("urls_index", templateVars);
 });
 
 app.get("/urls/new", (req, res) => {
-  let templateVars = {username: req.cookies["username"]};
+  let templateVars = {user: users[req.cookies["user_id"]]};
   res.render("urls_new", templateVars);
 });
 
 app.get("/urls/:shortURL", (req, res) => {
   let templateVars = {
-    username: req.cookies["username"],
+    user: users[req.cookies["user_id"]],
     shortURL: req.params.shortURL,
     longURL: urlDatabase[req.params.shortURL]
   };
@@ -81,25 +97,39 @@ app.get("/hello", (req, res) => {
   res.send("<html><body>Hello <b>World</b></body></html>\n");
 });
 
-app.get("/:nonexistent", (req, res) => {
-
+app.get("/error", (req, res) => {
+  res.send("Something went wrong.");
 })
 
 app.post("/login", (req, res) => {
-  res.cookie("username", req.body.username);
-  res.redirect("/urls");
+  let emailExists = checkEmailExists(req.body.email);
+
+  if (emailExists[0]) {
+    if (req.body.password === users[emailExists[1]].password) {
+      res.cookie("user_id", req.body.email);
+      res.redirect("/urls");
+    }
+  }
+  res.status(403).redirect("/error");
 });
 
 app.post("/logout", (req, res) => {
-  res.clearCookie("username");
+  res.clearCookie("user_id");
   res.redirect("/urls");
 });
 
 app.post("/register", (req, res) => {
-  let newId = generateRandomString();
-  users[newId] = {id: newId, email: req.body.email, password: req.body.password};
-  res.cookie("user_id", newId);
-  res.redirect("/urls");
+  let emailExists = checkEmailExists(req.body.email);
+  if (emailExists[0]) {
+    res.status(400).redirect("/error");
+  } else if (req.body.email.length === 0 || req.body.password.length === 0) {
+    res.status(400).redirect("/error");
+  } else {
+    let newId = generateRandomString();
+    users[newId] = {id: newId, email: req.body.email, password: req.body.password};
+    res.cookie("user_id", newId);
+    res.redirect("/urls");
+  }
 });
 
 app.post("/urls", (req, res) => {
@@ -110,7 +140,7 @@ app.post("/urls", (req, res) => {
 
 app.post("/urls/:shortURL", (req, res) => {
   addLongURL(req.params.shortURL, req.body.longURL);
-  res.redirect(req.get('referer'));
+  res.redirect("/urls");
 });
 
 app.post("/urls/:shortURL/delete", (req, res) => {
