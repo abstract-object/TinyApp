@@ -18,6 +18,14 @@ function generateRandomString() {
   return randomStr.substring(0, 6);
 }
 
+function addLongURL(shortURL, longURL) {
+  urlDatabase[shortURL] = "";
+  if (!longURL.match(/^[a-zA-Z]+:\/\//)) {
+    urlDatabase[shortURL] += "http://";
+  }
+  urlDatabase[shortURL] += longURL;
+}
+
 app.get("/", (req, res) => {
   res.send("Hello!");
 });
@@ -55,15 +63,20 @@ app.get("/:nonexistent", (req, res) => {
 
 app.post("/urls", (req, res) => {
   let shortURL = generateRandomString();
+  addLongURL(shortURL, req.body.longURL);
+  res.redirect("/urls/" + shortURL);
+});
 
-  if (!/:\/\//) {
-    urlDatabase[shortURL] = req.body.longURL;
-    res.redirect(/urls/ + shortURL);
+app.post("/urls/:shortURL", (req, res) => {
+  addLongURL(req.params.shortURL, req.body.longURL);
+  res.redirect(req.get('referer'));
+});
+
+app.post("/urls/:shortURL/delete", (req, res) => {
+  if (urlDatabase[req.params.shortURL]) {
+    delete urlDatabase[req.params.shortURL];
   }
-  else {
-    urlDatabase[shortURL] = "http://" + req.body.longURL;
-    res.redirect(/urls/ + shortURL);
-  }
+  res.redirect("/urls");
 });
 
 app.listen(PORT, () => {

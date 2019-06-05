@@ -7,7 +7,7 @@
   <% include ./partials/_header %>
   <ul>
     <% for (let url in urls) { %>
-    <li><%= url %>: <%= urls[url] %></li>   <form method="POST" action="/urls/<%= url %>/delete"><button type="submit" class="btn btn-primary">Delete</button></form>
+    <li><%= url %>: <a href="<%= urls[url] %>"><%= urls[url] %></a></li><a href="/urls/<%= url %>">Edit</a><form method="POST" action="/urls/<%= url %>/delete"><button type="submit" class="btn btn-primary">Delete</button></form>
     <% } %>
   </ul>
 </body>

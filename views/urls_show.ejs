@@ -5,7 +5,16 @@
 </head>
 <body style="font-size:20px; padding:50px;">
   <% include ./partials/_header %>
-  <p><%= shortURL %> is for <%= longURL %></p>
-  <form method="POST" action="/urls/<%= shortURL %>/delete"><button type="submit" class="btn btn-primary">Delete</button>
+  <p><a href="/u/<%= shortURL %>"><%= shortURL %> is for <%= longURL %></a></p>
+  <form method="POST" action="/urls/<%= shortURL %>/delete">
+    <button type="submit" class="btn btn-primary">Delete</button>
+  </form>
+  <form class="form-inline" action="/urls/<%= shortURL %>" method="POST">
+    <div class="form-group mb-2">
+      <label for="longURL">Change URL for this link:</label>
+      <input class="form-control" type="text" name="longURL" placeholder="Enter full URL" style="width: 300px; margin: 1em">
+      <button type="submit" class="btn btn-primary">Change URL</button>
+    </div>
+  </form>
 </body>
 </html>
