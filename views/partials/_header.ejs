@@ -1,2 +1,18 @@
 <h1>TinyApp</h1>
 <a href="/urls/new">Create a new url</a>
+
+<% if (!username) { %>
+     <form class="form-inline" action="/login" method="POST">
+       <div class="form-group mb-2">
+         <label for="Username">Login:</label>
+         <input class="form-control" type="text" name="username" placeholder="Username" style="width: 300px; margin: 1em">
+         <button type="submit" class="btn btn-primary">Submit</button>
+       </div>
+     </form>
+<% } else { %>
+     <form method="POST" action="/logout">
+       Hello, <%= username %><br>
+       <button type="submit" class="btn btn-primary">Logout</button>
+     </form>
+<% } %>
+<br>
