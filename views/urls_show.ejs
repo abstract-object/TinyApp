@@ -4,10 +4,8 @@
   <% include ./partials/_head %>
 </head>
 <body style="font-size:20px; padding:50px;">
-    <!-- Add EJS code here -->
-    <h1>TinyApp</h1>
-    <p><%= shortURL %> is for <%= longURL %></p>
-
-    <a href="#">Create a new url</a>
+  <% include ./partials/_header %>
+  <p><%= shortURL %> is for <%= longURL %></p>
+  <form method="POST" action="/urls/<%= shortURL %>/delete"><button type="submit" class="btn btn-primary">Delete</button>
 </body>
 </html>
