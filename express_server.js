@@ -9,12 +9,12 @@ app.use(bodyParser.urlencoded({extended: true}));
 app.set("view engine", "ejs");
 
 const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
+  "b2xVn2": {url: "http://www.lighthouselabs.ca", userId: "user"},
+  "9sm5xK": {url: "http://www.google.com", userId: "user"}
 };
 
 const users = {
-  "user": {
+  user: {
     id: "user",
     email: "user@example.com",
     password: "swordfish"
@@ -29,23 +29,32 @@ function generateRandomString() {
   return randomStr.substring(0, 6);
 }
 
-function addLongURL(shortURL, longURL) {
-  urlDatabase[shortURL] = "";
+function addLongURL(shortURL, longURL, id) {
+  urlDatabase[shortURL].userId = id;
+  urlDatabase[shortURL].url = "";
   if (!longURL.match(/^[a-zA-Z]+:\/\//)) {
-    urlDatabase[shortURL] += "http://";
+    urlDatabase[shortURL].url += "http://";
   }
-  urlDatabase[shortURL] += longURL;
+  urlDatabase[shortURL].url += longURL;
 }
 
 function checkEmailExists(address) {
-  let userList = Object.keys(users);
-
-  for (let user of userList) {
+  for (let user in users) {
     if (users[user].email === address) {
       return [true, user];
     }
   }
   return [false, null];
+}
+
+function urlsForUser(id) {
+  let ownURL = [];
+  for (let shortURL in urlDatabase) {
+    if (shortURL.userId === id) {
+      ownURL.push(shortURL);
+    }
+  }
+  return ownURL;
 }
 
 app.get("/", (req, res) => {
@@ -63,7 +72,7 @@ app.get("/register", (req, res) => {
 });
 
 app.get("/u/:shortURL", (req, res) => {
-  const longURL = urlDatabase[req.params.shortURL];
+  const longURL = urlDatabase[req.params.shortURL].url;
   res.status(301).redirect(longURL);
 });
 
@@ -87,7 +96,7 @@ app.get("/urls/:shortURL", (req, res) => {
   let templateVars = {
     user: users[req.cookies["user_id"]],
     shortURL: req.params.shortURL,
-    longURL: urlDatabase[req.params.shortURL]
+    longURL: urlDatabase[req.params.shortURL].url
   };
   res.render("urls_show", templateVars);
 });
@@ -137,12 +146,12 @@ app.post("/register", (req, res) => {
 
 app.post("/urls", (req, res) => {
   let shortURL = generateRandomString();
-  addLongURL(shortURL, req.body.longURL);
+  addLongURL(shortURL, req.body.longURL, req.cookies("user_id"));
   res.redirect("/urls/" + shortURL);
 });
 
 app.post("/urls/:shortURL", (req, res) => {
-  addLongURL(req.params.shortURL, req.body.longURL);
+  addLongURL(req.params.shortURL, req.body.longURL, req.cookies("user_id"));
   res.redirect("/urls");
 });
 

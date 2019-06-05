@@ -6,11 +6,11 @@
 <body style="font-size:20px; padding:50px;">
   <% include ./partials/_header %>
   <ul>
-    <% for (let url in urls) { %>
-    <li><%= url %>: <a href="<%= urls[url] %>"><%= urls[url] %></a> &nbsp;&nbsp;
+    <% for (let shortURL in urls) { %>
+    <li><%= shortURL %>: <a href="<%= urls[shortURL] %>"><%= urls[shortURL] %></a> &nbsp;&nbsp;
       <span class="btn-group" role="group" aria-label="Modify link">
-        <form method="GET" action="/urls/<%= url %>"><button type="submit" class="btn btn-primary">Edit</button></form>&nbsp;
-        <form method="POST" action="/urls/<%= url %>/delete"><button type="submit" class="btn btn-primary">Delete</button></form>
+        <form method="GET" action="/urls/<%= shortURL %>"><button type="submit" class="btn btn-primary">Edit</button></form>&nbsp;
+        <form method="POST" action="/urls/<%= shortURL %>/delete"><button type="submit" class="btn btn-primary">Delete</button></form>
       </span>
     </li>
     <% } %>
