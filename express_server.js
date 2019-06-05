@@ -24,7 +24,7 @@ app.get("/", (req, res) => {
 
 app.get("/u/:shortURL", (req, res) => {
   const longURL = urlDatabase[req.params.shortURL];
-  res.redirect(longURL);
+  res.status(301).redirect(longURL);
 });
 
 app.get("/urls", (req, res) => {
@@ -49,10 +49,21 @@ app.get("/hello", (req, res) => {
   res.send("<html><body>Hello <b>World</b></body></html>\n");
 });
 
+app.get("/:nonexistent", (req, res) => {
+
+})
+
 app.post("/urls", (req, res) => {
   let shortURL = generateRandomString();
-  urlDatabase[shortURL] = req.body.longURL;
-  res.redirect(/urls/ + shortURL);
+
+  if (!/:\/\//) {
+    urlDatabase[shortURL] = req.body.longURL;
+    res.redirect(/urls/ + shortURL);
+  }
+  else {
+    urlDatabase[shortURL] = "http://" + req.body.longURL;
+    res.redirect(/urls/ + shortURL);
+  }
 });
 
 app.listen(PORT, () => {
