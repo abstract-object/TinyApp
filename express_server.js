@@ -76,6 +76,9 @@ app.get("/urls", (req, res) => {
 });
 
 app.get("/urls/new", (req, res) => {
+  if (!users[req.cookies["user_id"]]) {
+    res.redirect("/login");
+  }
   let templateVars = {user: users[req.cookies["user_id"]]};
   res.render("urls_new", templateVars);
 });
@@ -106,7 +109,7 @@ app.post("/login", (req, res) => {
 
   if (emailExists[0]) {
     if (req.body.password === users[emailExists[1]].password) {
-      res.cookie("user_id", req.body.email);
+      res.cookie("user_id", users[emailExists[1]].id);
       res.redirect("/urls");
     }
   }
