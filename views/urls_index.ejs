@@ -6,13 +6,19 @@
 <body style="font-size:20px; padding:50px;">
   <% include ./partials/_header %>
   <ul>
-    <% for (let shortURL in urls) { %>
-    <li><%= shortURL %>: <a href="<%= urls[shortURL] %>"><%= urls[shortURL] %></a> &nbsp;&nbsp;
-      <span class="btn-group" role="group" aria-label="Modify link">
-        <form method="GET" action="/urls/<%= shortURL %>"><button type="submit" class="btn btn-primary">Edit</button></form>&nbsp;
-        <form method="POST" action="/urls/<%= shortURL %>/delete"><button type="submit" class="btn btn-primary">Delete</button></form>
-      </span>
-    </li>
+    <% if (!user) { %>
+      This page shows the shortened links that you have created. You can <a href="/login">login</a> to see your links or <a href="/register">register</a> if you don't already have an account.
+    <% } else { %>
+      <% for (let shortURL in urls) { %>
+        <% if (urls[shortURL].userId === user.id) { %>
+          <li><%= shortURL %>: <a href="<%= urls[shortURL] %>"><%= urls[shortURL].url %></a> &nbsp;&nbsp;
+            <span class="btn-group" role="group" aria-label="Modify link">
+              <form method="GET" action="/urls/<%= shortURL %>"><button type="submit" class="btn btn-primary">Edit</button></form>&nbsp;
+              <form method="POST" action="/urls/<%= shortURL %>/delete"><button type="submit" class="btn btn-primary">Delete</button></form>
+            </span>
+          </li>
+        <% } %>
+      <% } %>
     <% } %>
   </ul>
 </body>

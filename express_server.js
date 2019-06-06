@@ -10,7 +10,7 @@ app.set("view engine", "ejs");
 
 const urlDatabase = {
   "b2xVn2": {url: "http://www.lighthouselabs.ca", userId: "user"},
-  "9sm5xK": {url: "http://www.google.com", userId: "user"}
+  "9sm5xK": {url: "http://www.google.com", userId: "user2"}
 };
 
 const users = {
@@ -30,8 +30,7 @@ function generateRandomString() {
 }
 
 function addLongURL(shortURL, longURL, id) {
-  urlDatabase[shortURL].userId = id;
-  urlDatabase[shortURL].url = "";
+  urlDatabse[shortURL] = {url: "", userId: id};
   if (!longURL.match(/^[a-zA-Z]+:\/\//)) {
     urlDatabase[shortURL].url += "http://";
   }
@@ -95,6 +94,7 @@ app.get("/urls/new", (req, res) => {
 app.get("/urls/:shortURL", (req, res) => {
   let templateVars = {
     user: users[req.cookies["user_id"]],
+    host: req.hostname,
     shortURL: req.params.shortURL,
     longURL: urlDatabase[req.params.shortURL].url
   };
@@ -145,21 +145,37 @@ app.post("/register", (req, res) => {
 });
 
 app.post("/urls", (req, res) => {
-  let shortURL = generateRandomString();
-  addLongURL(shortURL, req.body.longURL, req.cookies("user_id"));
-  res.redirect("/urls/" + shortURL);
+  if (!users[req.cookies("user_id")]) {
+    res.redirect("/login");
+  } else {
+    let shortURL = generateRandomString();
+    addLongURL(shortURL, req.body.longURL, req.cookies("user_id"));
+    res.redirect("/urls/" + shortURL);
+  }
 });
 
 app.post("/urls/:shortURL", (req, res) => {
-  addLongURL(req.params.shortURL, req.body.longURL, req.cookies("user_id"));
-  res.redirect("/urls");
+  if (!users[req.cookies("user_id")]) {
+    res.redirect("/login");
+  } else if (req.cookies("user_id") !== urlDatabase[req.params.shortURL].userId) {
+    res.redirect("/error");
+  } else {
+    addLongURL(req.params.shortURL, req.body.longURL, req.cookies("user_id"));
+    res.redirect("/urls");
+  }
 });
 
 app.post("/urls/:shortURL/delete", (req, res) => {
-  if (urlDatabase[req.params.shortURL]) {
-    delete urlDatabase[req.params.shortURL];
+  if (!users[req.cookies("user_id")]) {
+    res.redirect("/login");
+  } else if (req.cookies("user_id") !== urlDatabase[req.params.shortURL].userId) {
+    res.redirect("/error");
+  } else {
+    if (urlDatabase[req.params.shortURL]) {
+      delete urlDatabase[req.params.shortURL];
+    }
+    res.redirect("/urls");
   }
-  res.redirect("/urls");
 });
 
 app.listen(PORT, () => {
