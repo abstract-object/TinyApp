@@ -61,6 +61,8 @@ const urlsForUser = (id) => {
 const app = express();
 app.set("view engine", "ejs");
 app.use(bodyParser.urlencoded({extended: true}));
+
+// Hash a random string for the cookie secret key
 app.use(cookieSession({name: 'session', secret: bcrypt.hashSync(generateRandomString(), 10)}));
 
 app.get("/", (req, res) => {
@@ -99,7 +101,9 @@ app.get("/register", (req, res) => {
 });
 
 // For a valid link, its viewcount is incremented, and it adds the url key
-// to a cookie to keep track of specific users; this is not foolproof.
+// to a cookie to keep track of specific users. For each short link, if its
+// whole id matches some part of the string in the cookie, then the user is
+// considered to have visited it before.
 app.get("/u/:shortURL", (req, res) => {
   if (!urlDatabase[req.params.shortURL]) {
     res.redirect("/notfound");
@@ -134,7 +138,8 @@ app.get("/urls", (req, res) => {
   res.render("urls_index", templateVars);
 });
 
-// If not logged in, the following pages redirect to login page
+// If not logged in, the following pages "redirect" to login page...
+// they render instead of redirect, to give custom error messages
 app.get("/urls/new", (req, res) => {
   if (!users[req.session.user_id]) {
     let templateVars = {
@@ -185,7 +190,7 @@ app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
 
-// 404 page for everything
+// 404 page for all invalid paths
 app.get("*", (req, res) => {
   let templateVars = {
     user: users[req.session.user_id],
@@ -232,12 +237,13 @@ app.post("/register", (req, res) => {
   };
 
   // register if not existing user and with valid email and password, else return relevant error
-  // check for valid email as *@*.*
+  // check for valid email with format (anything)@(anything).(anything)
   if (existingUser[0]) {
     templateVars.err = "existing user";
   } else if (!req.body.email.match(/^.+@.+\..+/) || req.body.email.length === 0 || req.body.password.length === 0) {
     templateVars.err = "invalid email or password";
   } else {
+    // newly registered user gets random string as id and has their password hashed
     let newId = generateRandomString();
     users[newId] = {id: newId, email: req.body.email, password: bcrypt.hashSync(req.body.password, 10)};
     req.session.user_id = newId;
@@ -258,7 +264,7 @@ app.post("/urls", (req, res) => {
     res.status(401);
     res.render("accounts", templateVars);
   } else {
-    // update; generate random string for short url
+    // new link; generate random string for short url, add current time
     let shortURL = generateRandomString();
     addLongURL(shortURL, req.body.longURL, req.session.user_id, new Date());
     res.redirect("/urls/" + shortURL);
