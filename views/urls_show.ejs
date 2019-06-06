@@ -5,17 +5,19 @@
 </head>
 <body style="font-size:20px; padding:50px;">
   <% include ./partials/_header %>
-  <p><a href="/u/<%= shortURL %>"><%= shortURL %> links to <%= longURL %></a></p>
+  <h3><%= shortURL %></h3>
+  <p><a href="/u/<%= shortURL %>"><%= longURL %></a><br>
+  the link has been visited <% if (!count) { %> 0 <% } else { %> <%= count %> <% } %> time <% if (count !== 1) { %>s <% } %></p>
   <form method="POST" action="/urls/<%= shortURL %>/delete">
-    <button type="submit" class="btn btn-primary">Delete</button>
+    <button type="submit" class="btn btn-primary">delete</button>
   </form>
   <form class="form-inline" action="/urls/<%= shortURL %>" method="POST">
     <div class="form-group mb-2">
-      <label for="redirect">Your redirect link is: </label>
+      <label for="redirect">your redirect link is: </label>
       <input class="form-control" type="text" name="redirect" value="http://<%= host %>:8080/u/<%= shortURL %>" style="width: 300px; margin: 1em">
-      <label for="longURL">Change URL for this link:</label>
-      <input class="form-control" type="text" name="longURL" placeholder="Enter full URL" style="width: 300px; margin: 1em">
-      <button type="submit" class="btn btn-primary">Change URL</button>
+      <label for="longURL">change target url for this link:</label>
+      <input class="form-control" type="text" name="longURL" placeholder="enter full url" style="width: 300px; margin: 1em">
+      <button type="submit" class="btn btn-primary">change url</button>
     </div>
   </form>
 </body>

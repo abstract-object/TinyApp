@@ -1,19 +1,19 @@
-<h1>TinyApp</h1>
-<form method="GET" action="/urls/new"><button type="submit" class="btn btn-primary">Create a new url</button></form>
-<span class="btn-group" role="group" aria-label="Account options">
+<h1>tinyapp</h1>
+<form method="GET" action="/urls/new"><button type="submit" class="btn btn-primary">create a new link</button></form>
+<% if (user) { %> Welcome, <%= user.email %><br> <% } %>
+<span class="btn-group" role="group" aria-label="account options">
   <% if (!user) { %>
     <form method="GET" action="/login">
-      <button type="submit" class="btn btn-primary">Login</button>
+      <button type="submit" class="btn btn-primary">login</button>
     </form>
   <% } else { %>
     <form method="POST" action="/logout">
-      Welcome, <%= user.email %><br>
-      <button type="submit" class="btn btn-primary">Logout</button>
+      <button type="submit" class="btn btn-primary">logout</button>
     </form>
   <% } %>
-  &nbsp;
+  &nbsp; | &nbsp;
   <form method="GET" action="/register">
-    <button type="submit" class="btn btn-primary">Register</button>
+    <button type="submit" class="btn btn-primary">register</button>
   </form>
 </span>
 <br><br>

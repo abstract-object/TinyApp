@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <% include ./partials/_head %>
+</head>
+<body style="font-size:20px; padding:50px;">
+  <% include ./partials/_header %>
+  <% if (err === "not found") { %>
+    404 PAGE NOT FOUND
+    <br><br>
+    normally i never raise my voice, but it feels good to let it out sometimes, y'know?
+  <% } %>
+  <% if (err === "wrong user") { %>
+    you don't have permission to modify that link
+  <% } %>
+</body>
+</html>
