@@ -1,3 +1,4 @@
+"use strict";
 const PORT = 8080;
 const express = require("express");
 const bcrypt = require('bcrypt');
@@ -5,19 +6,10 @@ const bodyParser = require("body-parser");
 const cookieSession = require("cookie-session");
 
 // Database stores short url as key, with long url and user as values.
-const urlDatabase = {
-  "b2xVn2": {url: "http://www.lighthouselabs.ca", userId: "user", date: new Date()},
-  "9sm5xK": {url: "http://www.google.com", userId: "user", date: new Date()}
-};
+const urlDatabase = {};
 
 // Each user has an id, email, and (hashed) password.
-const users = {
-  user: {
-    id: "user",
-    email: "user@example.com",
-    password: bcrypt.hashSync("swordfish", 10)
-  }
-};
+const users = {};
 
 // Generate a random alphanumeric string; convert a number to base 36, then remove 0.
 // The resultant string should be at least six characters long, and should not match
@@ -31,6 +23,8 @@ const generateRandomString = () => {
 };
 
 // Create a new entry or update an existing one in the url database. The long url, if
+
+
 // there is no protocol, will automatically use http:// so that the redirection can
 // be performed successfully.
 const addLongURL = (shortURL, longURL, id, date) => {
@@ -39,10 +33,7 @@ const addLongURL = (shortURL, longURL, id, date) => {
     urlDatabase[shortURL].url += "http://";
   }
   urlDatabase[shortURL].url += longURL;
-
-  if (date) {
-    urlDatabase[shortURL].date = date;
-  }
+  urlDatabase[shortURL].date = date;
 };
 
 // Check if any user in the database has the queried email. Return
@@ -80,28 +71,38 @@ app.get("/", (req, res) => {
   res.render("misc", templateVars);
 });
 
+// If already logged in, login and register redirect to /urls
 app.get("/login", (req, res) => {
-  let templateVars = {
-    user: users[req.session.user_id],
-    action: "login",
-    err: "none"
-  };
-  res.render("accounts", templateVars);
+  if (users[req.session.user_id]) {
+    res.redirect("/urls");
+  } else {
+    let templateVars = {
+      user: users[req.session.user_id],
+      action: "login",
+      err: "none"
+    };
+    res.render("accounts", templateVars);
+  }
 })
 
 app.get("/register", (req, res) => {
-  let templateVars = {
-    user: users[req.session.user_id],
-    action: "register",
-    err: "none"
-  };
-  res.render("accounts", templateVars);
+  if (users[req.session.user_id]) {
+    res.redirect("/urls");
+  } else {
+    let templateVars = {
+      user: users[req.session.user_id],
+      action: "register",
+      err: "none"
+    };
+    res.render("accounts", templateVars);
+  }
 });
 
+// For a valid link, its viewcount is incremented, and it adds the url key
+// to a cookie to keep track of specific users; this is not foolproof.
 app.get("/u/:shortURL", (req, res) => {
-  // 404 if invalid link
   if (!urlDatabase[req.params.shortURL]) {
-    res.redirect("*");
+    res.redirect("/notfound");
   } else {
     const longURL = urlDatabase[req.params.shortURL].url;
     const shortURL = req.params.shortURL;
@@ -133,6 +134,7 @@ app.get("/urls", (req, res) => {
   res.render("urls_index", templateVars);
 });
 
+// If not logged in, the following pages redirect to login page
 app.get("/urls/new", (req, res) => {
   if (!users[req.session.user_id]) {
     let templateVars = {
@@ -151,9 +153,8 @@ app.get("/urls/new", (req, res) => {
 });
 
 app.get("/urls/:shortURL", (req, res) => {
-  // 404 if invalid link
   if (!urlDatabase[req.params.shortURL]) {
-    res.redirect("*");
+    res.redirect("/notfound");
   } else if (!users[req.session.user_id]) {
     let templateVars = {
       user: users[req.session.user_id],
@@ -174,9 +175,7 @@ app.get("/urls/:shortURL", (req, res) => {
       user: users[req.session.user_id],
       host: req.hostname,
       shortURL: req.params.shortURL,
-      longURL: urlDatabase[req.params.shortURL].url,
-      count: urlDatabase[req.params.shortURL].count,
-      uniqueCount: urlDatabase[req.params.shortURL].unique
+      urls: urlDatabase[req.params.shortURL]
     };
     res.render("urls_show", templateVars);
   }
@@ -186,6 +185,7 @@ app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
 
+// 404 page for everything
 app.get("*", (req, res) => {
   let templateVars = {
     user: users[req.session.user_id],
@@ -199,7 +199,8 @@ app.post("/login", (req, res) => {
   let existingUser = checkEmailExists(req.body.email);
   let templateVars = {
     user: users[req.session.user_id],
-    action: "login"
+    action: "login",
+    err: "none"
   };
 
   // login if correct user and password, else return relevant error
@@ -226,7 +227,8 @@ app.post("/register", (req, res) => {
   let existingUser = checkEmailExists(req.body.email);
   let templateVars = {
     user: users[req.session.user_id],
-    action: "register"
+    action: "register",
+    err: "none"
   };
 
   // register if not existing user and with valid email and password, else return relevant error
@@ -245,6 +247,7 @@ app.post("/register", (req, res) => {
   res.render("accounts", templateVars);
 });
 
+// redirect to login if not logged in for the following links
 app.post("/urls", (req, res) => {
   if (!users[req.session.user_id]) {
     let templateVars = {
@@ -255,6 +258,7 @@ app.post("/urls", (req, res) => {
     res.status(401);
     res.render("accounts", templateVars);
   } else {
+    // update; generate random string for short url
     let shortURL = generateRandomString();
     addLongURL(shortURL, req.body.longURL, req.session.user_id, new Date());
     res.redirect("/urls/" + shortURL);
@@ -262,7 +266,6 @@ app.post("/urls", (req, res) => {
 });
 
 app.post("/urls/:shortURL", (req, res) => {
-  // redirect to login if not logged in
   // don't allow another user to change the link
   if (!users[req.session.user_id]) {
     let templateVars = {
@@ -280,13 +283,16 @@ app.post("/urls/:shortURL", (req, res) => {
     res.status(403);
     res.render("misc", templateVars);
   } else {
-    addLongURL(req.params.shortURL, req.body.longURL, req.session.user_id);
+    // updating a url is like creating a new link, but keeping the exisitng short url
+    // reset count, unique visitors, and date created
+    addLongURL(req.params.shortURL, req.body.longURL, req.session.user_id, new Date());
+    urlDatabase[req.params.shortURL].count = 0;
+    urlDatabase[req.params.shortURL].unique = 0;
     res.redirect("/urls");
   }
 });
 
 app.post("/urls/:shortURL/delete", (req, res) => {
-  // redirect to login if not logged in
   // don't allow another user to delete the link
   if (!users[req.session.user_id]) {
     let templateVars = {

@@ -1,13 +1,13 @@
 {
   "name": "tinyapp",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "create, modify, or delete shortened links",
+  "main": "app.js",
   "scripts": {
-    "start": "./node_modules/.bin/nodemon -L express_server.js",
+    "start": "./node_modules/.bin/nodemon -L app.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
+  "author": "Jonathan Liu",
   "license": "ISC",
   "dependencies": {
     "bcrypt": "2.0.0",
