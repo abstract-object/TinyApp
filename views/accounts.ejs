@@ -26,5 +26,8 @@
   <% if (err === "invalid email or password") { %>
     you must enter a valid email address and a password
   <% } %>
+  <% if (err === "not logged in") { %>
+    you must login to access that page
+  <% } %>
 </body>
 </html>

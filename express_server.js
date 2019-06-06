@@ -6,8 +6,8 @@ const cookieSession = require("cookie-session");
 
 // Database stores short url as key, with long url and user as values.
 const urlDatabase = {
-  "b2xVn2": {url: "http://www.lighthouselabs.ca", userId: "user"},
-  "9sm5xK": {url: "http://www.google.com", userId: "user"}
+  "b2xVn2": {url: "http://www.lighthouselabs.ca", userId: "user", date: new Date()},
+  "9sm5xK": {url: "http://www.google.com", userId: "user", date: new Date()}
 };
 
 // Each user has an id, email, and (hashed) password.
@@ -33,12 +33,16 @@ const generateRandomString = () => {
 // Create a new entry or update an existing one in the url database. The long url, if
 // there is no protocol, will automatically use http:// so that the redirection can
 // be performed successfully.
-const addLongURL = (shortURL, longURL, id) => {
+const addLongURL = (shortURL, longURL, id, date) => {
   urlDatabase[shortURL] = {url: "", userId: id};
   if (!longURL.match(/^\w+:\/\//)) {
     urlDatabase[shortURL].url += "http://";
   }
   urlDatabase[shortURL].url += longURL;
+
+  if (date) {
+    urlDatabase[shortURL].date = date;
+  }
 };
 
 // Check if any user in the database has the queried email. Return
@@ -71,7 +75,7 @@ app.use(cookieSession({name: 'session', secret: bcrypt.hashSync(generateRandomSt
 app.get("/", (req, res) => {
   let templateVars = {
     user: users[req.session.user_id],
-    err: ""
+    err: "none"
   };
   res.render("misc", templateVars);
 });
@@ -80,7 +84,7 @@ app.get("/login", (req, res) => {
   let templateVars = {
     user: users[req.session.user_id],
     action: "login",
-    err: ""
+    err: "none"
   };
   res.render("accounts", templateVars);
 })
@@ -89,7 +93,7 @@ app.get("/register", (req, res) => {
   let templateVars = {
     user: users[req.session.user_id],
     action: "register",
-    err: ""
+    err: "none"
   };
   res.render("accounts", templateVars);
 });
@@ -100,10 +104,23 @@ app.get("/u/:shortURL", (req, res) => {
     res.redirect("*");
   } else {
     const longURL = urlDatabase[req.params.shortURL].url;
-    if (!urlDatabase[req.params.shortURL].count) {
-      urlDatabase[req.params.shortURL].count = 0;
+    const shortURL = req.params.shortURL;
+    if (!urlDatabase[shortURL].count) {
+      urlDatabase[shortURL].count = 0;
+      urlDatabase[shortURL].unique = 0;
     }
     urlDatabase[req.params.shortURL].count += 1;
+    if (!req.session.visit) {
+      req.session.visit = shortURL;
+      urlDatabase[shortURL].unique += 1;
+    } else {
+      let visited = req.session.visit;
+      if (!visited.includes(shortURL)) {
+        visited += shortURL;
+        req.session.visit = visited;
+        urlDatabase[shortURL].unique += 1;
+      }
+    }
     res.redirect(longURL);
   }
 });
@@ -117,9 +134,14 @@ app.get("/urls", (req, res) => {
 });
 
 app.get("/urls/new", (req, res) => {
-  // redirect to login if not logged in
   if (!users[req.session.user_id]) {
-    res.redirect("/login");
+    let templateVars = {
+      user: users[req.session.user_id],
+      action: "login",
+      err: "not logged in"
+    };
+    res.status(401);
+    res.render("accounts", templateVars);
   } else {
     let templateVars = {
       user: users[req.session.user_id]
@@ -132,13 +154,29 @@ app.get("/urls/:shortURL", (req, res) => {
   // 404 if invalid link
   if (!urlDatabase[req.params.shortURL]) {
     res.redirect("*");
+  } else if (!users[req.session.user_id]) {
+    let templateVars = {
+      user: users[req.session.user_id],
+      action: "login",
+      err: "not logged in"
+    };
+    res.status(401);
+    res.render("accounts", templateVars);
+  } else if (req.session.user_id !== urlDatabase[req.params.shortURL].userId) {
+    let templateVars = {
+      user: users[req.session.user_id],
+      err: "wrong user"
+    };
+    res.status(403);
+    res.render("misc", templateVars);
   } else {
     let templateVars = {
       user: users[req.session.user_id],
       host: req.hostname,
       shortURL: req.params.shortURL,
       longURL: urlDatabase[req.params.shortURL].url,
-      count: urlDatabase[req.params.shortURL].count
+      count: urlDatabase[req.params.shortURL].count,
+      uniqueCount: urlDatabase[req.params.shortURL].unique
     };
     res.render("urls_show", templateVars);
   }
@@ -208,12 +246,17 @@ app.post("/register", (req, res) => {
 });
 
 app.post("/urls", (req, res) => {
-  // redirect to login if not logged in
   if (!users[req.session.user_id]) {
-    res.redirect("/login");
+    let templateVars = {
+      user: users[req.session.user_id],
+      action: "login",
+      err: "not logged in"
+    };
+    res.status(401);
+    res.render("accounts", templateVars);
   } else {
     let shortURL = generateRandomString();
-    addLongURL(shortURL, req.body.longURL, req.session.user_id);
+    addLongURL(shortURL, req.body.longURL, req.session.user_id, new Date());
     res.redirect("/urls/" + shortURL);
   }
 });
@@ -222,7 +265,13 @@ app.post("/urls/:shortURL", (req, res) => {
   // redirect to login if not logged in
   // don't allow another user to change the link
   if (!users[req.session.user_id]) {
-    res.redirect("/login");
+    let templateVars = {
+      user: users[req.session.user_id],
+      action: "login",
+      err: "not logged in"
+    };
+    res.status(401);
+    res.render("accounts", templateVars);
   } else if (req.session.user_id !== urlDatabase[req.params.shortURL].userId) {
     let templateVars = {
       user: users[req.session.user_id],
@@ -240,7 +289,13 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   // redirect to login if not logged in
   // don't allow another user to delete the link
   if (!users[req.session.user_id]) {
-    res.redirect("/login");
+    let templateVars = {
+      user: users[req.session.user_id],
+      action: "login",
+      err: "not logged in"
+    };
+    res.status(401);
+    res.render("accounts", templateVars);
   } else if (req.session.user_id !== urlDatabase[req.params.shortURL].userId) {
     let templateVars = {
       user: users[req.session.user_id],

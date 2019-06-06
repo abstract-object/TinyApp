@@ -11,7 +11,7 @@
     <% } else { %>
       <% for (let shortURL in urls) { %>
         <% if (urls[shortURL].userId === user.id) { %>
-          <li><%= shortURL %>: <a href="<%= urls[shortURL] %>"><%= urls[shortURL].url %></a> &nbsp;&nbsp;
+          <li><%= shortURL %>: <a href="<%= urls[shortURL].url %>"><%= urls[shortURL].url %></a> &nbsp;&nbsp;
             <span class="btn-group" role="group" aria-label="modify link">
               <form method="GET" action="/urls/<%= shortURL %>"><button type="submit" class="btn btn-primary">edit</button></form>&nbsp;|&nbsp;
               <form method="POST" action="/urls/<%= shortURL %>/delete"><button type="submit" class="btn btn-primary">delete</button></form>

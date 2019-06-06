@@ -7,7 +7,7 @@
   <% include ./partials/_header %>
   <h3><%= shortURL %></h3>
   <p><a href="/u/<%= shortURL %>"><%= longURL %></a><br>
-  the link has been visited <% if (!count) { %> 0 <% } else { %> <%= count %> <% } %> time <% if (count !== 1) { %>s <% } %></p>
+  the link has been visited <% if (!count) { %> 0 <% } else { %> <%= count %> <% } %> time<% if (count !== 1) { %>s <% } %>by <% if (!uniqueCount) { %> 0 <% } else { %> <%= uniqueCount %> <% } %> unique visitor<% if (uniqueCount !== 1) { %>s <% } %></p>
   <form method="POST" action="/urls/<%= shortURL %>/delete">
     <button type="submit" class="btn btn-primary">delete</button>
   </form>
