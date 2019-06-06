@@ -1,12 +1,13 @@
-const express = require("express");
-const app = express();
 const PORT = 8080;
+const express = require("express");
+const bcrypt = require('bcrypt');
 const bodyParser = require("body-parser");
 const cookies = require("cookie-parser");
 
-app.use(cookies());
-app.use(bodyParser.urlencoded({extended: true}));
+const app = express();
 app.set("view engine", "ejs");
+app.use(bodyParser.urlencoded({extended: true}));
+app.use(cookies());
 
 const urlDatabase = {
   "b2xVn2": {url: "http://www.lighthouselabs.ca", userId: "user"},
@@ -17,7 +18,7 @@ const users = {
   user: {
     id: "user",
     email: "user@example.com",
-    password: "swordfish"
+    password: bcrypt.hashSync("swordfish", 10)
   }
 };
 
@@ -114,11 +115,11 @@ app.get("/error", (req, res) => {
 })
 
 app.post("/login", (req, res) => {
-  let emailExists = checkEmailExists(req.body.email);
+  let existingUser = checkEmailExists(req.body.email);
 
-  if (emailExists[0]) {
-    if (req.body.password === users[emailExists[1]].password) {
-      res.cookie("user_id", users[emailExists[1]].id);
+  if (existingUser[0]) {
+    if (bcrypt.compareSync(req.body.password, users[existingUser[1]].password)) {
+      res.cookie("user_id", users[existingUser[1]].id);
       res.redirect("/urls");
     }
   }
@@ -131,14 +132,14 @@ app.post("/logout", (req, res) => {
 });
 
 app.post("/register", (req, res) => {
-  let emailExists = checkEmailExists(req.body.email);
-  if (emailExists[0]) {
+  let existingUser = checkEmailExists(req.body.email);
+  if (existingUser[0]) {
     res.status(400).redirect("/error");
   } else if (req.body.email.length === 0 || req.body.password.length === 0) {
     res.status(400).redirect("/error");
   } else {
     let newId = generateRandomString();
-    users[newId] = {id: newId, email: req.body.email, password: req.body.password};
+    users[newId] = {id: newId, email: req.body.email, password: bcrypt.hashSync(req.body.password, 10)};
     res.cookie("user_id", newId);
     res.redirect("/urls");
   }
