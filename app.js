@@ -65,15 +65,15 @@ app.use(bodyParser.urlencoded({extended: true}));
 // Hash a random string for the cookie secret key
 app.use(cookieSession({name: 'session', secret: bcrypt.hashSync(generateRandomString(), 10)}));
 
+// If already logged in, /, login, and register redirect to /urls
 app.get("/", (req, res) => {
-  let templateVars = {
-    user: users[req.session.user_id],
-    err: "none"
-  };
-  res.render("misc", templateVars);
+  if (users[req.session.user_id]) {
+    res.redirect("/urls");
+  } else {
+    res.redirect("/login");
+  }
 });
 
-// If already logged in, login and register redirect to /urls
 app.get("/login", (req, res) => {
   if (users[req.session.user_id]) {
     res.redirect("/urls");
@@ -147,8 +147,7 @@ app.get("/urls/new", (req, res) => {
       action: "login",
       err: "not logged in"
     };
-    res.status(401);
-    res.render("accounts", templateVars);
+    res.status(401).render("accounts", templateVars);
   } else {
     let templateVars = {
       user: users[req.session.user_id]
@@ -166,15 +165,13 @@ app.get("/urls/:shortURL", (req, res) => {
       action: "login",
       err: "not logged in"
     };
-    res.status(401);
-    res.render("accounts", templateVars);
+    res.status(401).render("accounts", templateVars);
   } else if (req.session.user_id !== urlDatabase[req.params.shortURL].userId) {
     let templateVars = {
       user: users[req.session.user_id],
       err: "wrong user"
     };
-    res.status(403);
-    res.render("misc", templateVars);
+    res.status(403).render("misc", templateVars);
   } else {
     let templateVars = {
       user: users[req.session.user_id],
@@ -196,8 +193,7 @@ app.get("*", (req, res) => {
     user: users[req.session.user_id],
     err: "not found"
   };
-  res.status(404);
-  res.render("misc", templateVars);
+  res.status(404).render("misc", templateVars);
 });
 
 app.post("/login", (req, res) => {
@@ -219,8 +215,7 @@ app.post("/login", (req, res) => {
   } else {
     templateVars.err = "no user";
   }
-  res.status(403);
-  res.render("accounts", templateVars);
+  res.status(403).render("accounts", templateVars);
 });
 
 app.post("/logout", (req, res) => {
@@ -249,20 +244,13 @@ app.post("/register", (req, res) => {
     req.session.user_id = newId;
     res.redirect("/urls");
   }
-  res.status(400);
-  res.render("accounts", templateVars);
+  res.status(400).render("accounts", templateVars);
 });
 
 // redirect to login if not logged in for the following links
 app.post("/urls", (req, res) => {
   if (!users[req.session.user_id]) {
-    let templateVars = {
-      user: users[req.session.user_id],
-      action: "login",
-      err: "not logged in"
-    };
-    res.status(401);
-    res.render("accounts", templateVars);
+    res.redirect(401, "/login");
   } else {
     // new link; generate random string for short url, add current time
     let shortURL = generateRandomString();
@@ -274,20 +262,9 @@ app.post("/urls", (req, res) => {
 app.post("/urls/:shortURL", (req, res) => {
   // don't allow another user to change the link
   if (!users[req.session.user_id]) {
-    let templateVars = {
-      user: users[req.session.user_id],
-      action: "login",
-      err: "not logged in"
-    };
-    res.status(401);
-    res.render("accounts", templateVars);
+    res.redirect(401, "/login");
   } else if (req.session.user_id !== urlDatabase[req.params.shortURL].userId) {
-    let templateVars = {
-      user: users[req.session.user_id],
-      err: "wrong user"
-    };
-    res.status(403);
-    res.render("misc", templateVars);
+    res.redirect(403, "/error");
   } else {
     // updating a url is like creating a new link, but keeping the exisitng short url
     // reset count, unique visitors, and date created
@@ -301,20 +278,9 @@ app.post("/urls/:shortURL", (req, res) => {
 app.post("/urls/:shortURL/delete", (req, res) => {
   // don't allow another user to delete the link
   if (!users[req.session.user_id]) {
-    let templateVars = {
-      user: users[req.session.user_id],
-      action: "login",
-      err: "not logged in"
-    };
-    res.status(401);
-    res.render("accounts", templateVars);
+    res.redirect(401, "/login");
   } else if (req.session.user_id !== urlDatabase[req.params.shortURL].userId) {
-    let templateVars = {
-      user: users[req.session.user_id],
-      err: "wrong user"
-    };
-    res.status(403);
-    res.render("misc", templateVars);
+    res.redirect(403, "/error");
   } else {
     if (urlDatabase[req.params.shortURL]) {
       delete urlDatabase[req.params.shortURL];
