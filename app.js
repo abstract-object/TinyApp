@@ -153,7 +153,7 @@ app.get("/urls/:shortURL", (req, res) => {
       host: req.hostname,
       shortURL: req.params.shortURL,
       urls: urlDatabase[req.params.shortURL],
-      guestbook: visitors
+      guestbook: visitors[req.params.shortURL]
     };
     res.render("urls_show", templateVars);
   }
@@ -183,13 +183,15 @@ app.get("/u/:shortURL", (req, res) => {
     if (!visited) {
       req.session.visit = shortURL;
       urlDatabase[shortURL].unique += 1;
-      visitors[generateRandomString()] = new Date();
+      visitors[req.params.shortURL] = {};
+      visitors[req.params.shortURL][generateRandomString()] = new Date();
     } else {
       if (!visited.includes(shortURL)) {
         visited += ` ${shortURL}`;
         req.session.visit = visited;
         urlDatabase[shortURL].unique += 1;
-        visitors[generateRandomString()] = new Date();
+        visitors[req.params.shortURL] = {};
+        visitors[req.params.shortURL][generateRandomString()] = new Date();
       }
     }
     res.redirect(longURL);

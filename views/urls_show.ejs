@@ -9,7 +9,7 @@
   <p>redirects to <strong><%= urls.url %></strong><br>
   the link has been visited <% if (!urls.count) { %> 0 <% } else { %> <%= urls.count %> <% } %> time<% if (urls.count !== 1) { %>s<% } %> by <% if (!urls.unique) { %> 0 <% } else { %> <%= urls.unique %> <% } %> unique visitor<% if (urls.unique !== 1) { %>s <% } %></p>
   <div style="font-size: 10px">
-    <% if (guestbook.length !== 0) { %>this link was visited by:<br><% } %>
+    <% if (guestbook) { %>this link was visited by:<br><% } %>
     <% for (let visitor in guestbook) { %>
       <%= visitor %> on <%= guestbook[visitor].toString().toLowerCase() %><br>
     <% } %>
