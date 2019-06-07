@@ -23,7 +23,7 @@
   <form class="form-inline" action="/urls/<%= shortURL %>?_method=PUT" method="POST">
     <div class="form-group mb-2" style="margin: 0 auto">
       <label for="redirect">your redirect link is: </label>
-      <input class="form-control" type="text" name="redirect" value="<%= protocol %>://<%= host %>:8080/u/<%= shortURL %>" style="width: 300px;margin: 1em">
+      <input class="form-control" type="text" name="redirect" placeholder="<%= protocol %>://<%= host %>:8080/u/<%= shortURL %>" value="<%= protocol %>://<%= host %>:8080/u/<%= shortURL %>" style="width: 300px;margin: 1em">
       <label for="longURL">change target url for this link:</label>
       <input class="form-control" type="text" name="longURL" placeholder="enter full url" style="width: 300px; margin: 1em">
       <button type="submit" class="btn btn-outline-primary btn-sm">change url</button>

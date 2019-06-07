@@ -8,6 +8,7 @@
 
   <!-- Display error messages if there is an error specified by the query string. -->
   <% if (err) { %>
+  <div class="alert alert-<% if (err === "wrong-password") { %>danger<% } else { %>warning<% } %>" role="alert">
   <h5><i class="fa fa-user-times"></i></h5>
   <% } %>
   <p>
@@ -15,7 +16,7 @@
     incorrect password, try again
   <% } %>
   <% if (err === "no-user") { %>
-    account not found
+    that account doesn't exist
   <% } %>
   <% if (err === "existing-user") { %>
     an account with that email already exists
@@ -27,7 +28,7 @@
     you must login to access that page
   <% } %>
   </p>
-
+  </div>
   <!-- This page renders both login and register pages. -->
   <h3><i class="fa fa-user-circle"></i> <%= action %></h3>
   <form class="form-inline" action="/<%= action %>" method="POST">

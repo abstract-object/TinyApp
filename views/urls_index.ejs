@@ -8,8 +8,10 @@
 
   <!-- Error message (403) if redirected with query string. -->
   <% if (err) { %>
+  <div class="alert alert-danger" role="alert">
     <h5><i class="fa fa-ban"></i></h5>
     <p>you don't have permission to modify that link</p>
+  </div>
   <% } %>
 
   <h2><i class="fa fa-list"></i> my links</h2>
@@ -17,14 +19,18 @@
 
     <!-- Message for user who is not logged in. -->
     <% if (!user) { %>
-      <p>this page shows the shortened links that you have created<br>
-        you can <a href="/login">login</a> to see your links or <a href="/register">register</a> if you don't already have an account</p>
+      <div class="alert alert-primary" role="alert">
+        <p>this page shows the shortened links that you have created<br>
+          you can <a href="/login">login</a> to see your links or <a href="/register">register</a> if you don't already have an account</p>
+      </div>
     <% } else { %>
 
       <!-- If logged in, display short url, long url, link to the redirects and have option to edit and delete links.
         Also shows date created, total view count, and number of unique visitors. -->
+      <% let i = 0 %>
       <% for (let shortURL in urls) { %>
         <% hasLink = true %>
+        <% if (i % 2 === 0) { %> <div class="alert alert-secondary" role="alert"> <% } %>
         <h4><a href="/u/<%= shortURL %>"><strong><%= shortURL %></strong></a> <i class="fa fa-arrow-right"></i> <%= urls[shortURL].url %></h4>&nbsp;&nbsp;
           <span class="btn-group" role="group" aria-label="modify link">
             <form method="GET" action="/urls/<%= shortURL %>"><button type="submit" class="btn btn-outline-primary btn-sm">edit</button></form>&nbsp;&nbsp;&nbsp;
@@ -32,6 +38,8 @@
           </span><br>
           <p>created on <%= urls[shortURL].date.toLocaleString().toLowerCase() %><br>
           visited <% if (!urls[shortURL].count) { %> 0 <% } else { %> <%= urls[shortURL].count %> <% } %> time<% if (urls[shortURL].count !== 1) { %>s<% } %> by <% if (!urls[shortURL].unique) { %> 0 <% } else { %> <%= urls[shortURL].unique %> <% } %> unique visitor<% if (urls[shortURL].unique !== 1) { %>s <% } %></p>
+        <% if (i % 2 === 0) { %> </div> <% } %>
+        <% i++ %>
       <% } %>
 
       <!-- Have a message here if logged in and without any links. -->
