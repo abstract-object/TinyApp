@@ -17,9 +17,9 @@
           <h4><a href="/u/<%= shortURL %>"><strong><%= shortURL %></strong></a> <i class="fa fa-arrow-right"></i> <%= urls[shortURL].url %></h4>&nbsp;&nbsp;
             <span class="btn-group" role="group" aria-label="modify link">
               <form method="GET" action="/urls/<%= shortURL %>"><button type="submit" class="btn btn-outline-primary btn-sm">edit</button></form>&nbsp;&nbsp;&nbsp;
-              <form method="POST" action="/urls/<%= shortURL %>/delete"><button type="submit" class="btn btn-outline-dark btn-sm">delete</button></form>
+              <form method="POST" action="/urls/<%= shortURL %>/delete?_method=DELETE"><button type="submit" class="btn btn-outline-dark btn-sm">delete</button></form>
             </span><br>
-            <p>created on <%= urls[shortURL].date.toDateString().toLowerCase() %><br>
+            <p>created on <%= urls[shortURL].date.toString().toLowerCase() %><br>
             visited <% if (!urls[shortURL].count) { %> 0 <% } else { %> <%= urls[shortURL].count %> <% } %> time<% if (urls[shortURL].count !== 1) { %>s<% } %> by <% if (!urls[shortURL].unique) { %> 0 <% } else { %> <%= urls[shortURL].unique %> <% } %> unique visitor<% if (urls[shortURL].unique !== 1) { %>s <% } %></p>
           <br>
         <% } %>

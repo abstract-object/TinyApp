@@ -8,11 +8,18 @@
   <h3><a href="/u/<%= shortURL %>"><i class="fa fa-external-link-square"></i> <%= shortURL %></a></h3>
   <p>redirects to <strong><%= urls.url %></strong><br>
   the link has been visited <% if (!urls.count) { %> 0 <% } else { %> <%= urls.count %> <% } %> time<% if (urls.count !== 1) { %>s<% } %> by <% if (!urls.unique) { %> 0 <% } else { %> <%= urls.unique %> <% } %> unique visitor<% if (urls.unique !== 1) { %>s <% } %></p>
-  <form method="POST" action="/urls/<%= shortURL %>/delete">
+  <div style="font-size: 10px">
+    <% if (guestbook.length !== 0) { %>this link was visited by:<br><% } %>
+    <% for (let visitor in guestbook) { %>
+      <%= visitor %> on <%= guestbook[visitor].toString().toLowerCase() %><br>
+    <% } %>
+  </div>
+  <br>
+  <form method="POST" action="/urls/<%= shortURL %>/delete?_method=DELETE">
     <button type="submit" class="btn btn-outline-dark btn-sm">delete</button>
   </form>
   <br><br>
-  <form class="form-inline" action="/urls/<%= shortURL %>" method="POST">
+  <form class="form-inline" action="/urls/<%= shortURL %>?_method=PUT" method="POST">
     <div class="form-group mb-2" style="margin: 0 auto">
       <label for="redirect">your redirect link is: </label>
       <input class="form-control" type="text" name="redirect" value="http://<%= host %>:8080/u/<%= shortURL %>" style="width: 300px;margin: 1em">

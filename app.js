@@ -1,6 +1,7 @@
 "use strict";
 const PORT = 8080;
 const express = require("express");
+const methodOverride = require('method-override')
 const bcrypt = require('bcrypt');
 const bodyParser = require("body-parser");
 const cookieSession = require("cookie-session");
@@ -11,12 +12,15 @@ const urlDatabase = {};
 // Each user has an id, email, and (hashed) password.
 const users = {};
 
+// Track unique visitors.
+const visitors = {};
+
 // Generate a random alphanumeric string; convert a number to base 36, then remove 0.
 // The resultant string should be at least six characters long, and should not match
-// an existing url or user id once it is truncated to six characters.
+// an existing url, user id, or visitor id once it is truncated to six characters.
 const generateRandomString = () => {
   let randomStr = "";
-  while (randomStr.length < 6 || urlDatabase[randomStr.substring(0, 6)] || users[randomStr.substring(0, 6)]) {
+  while (randomStr.length < 6 || urlDatabase[randomStr.substring(0, 6)] || users[randomStr.substring(0, 6)] || visitors[randomStr.substring(0, 6)]) {
     randomStr = Math.random().toString(36).replace("0.", "");
   }
   return randomStr.substring(0, 6);
@@ -38,13 +42,13 @@ const addLongURL = (shortURL, longURL, id, date) => {
 
 // Check if any user in the database has the queried email. Return
 // the associated user if so.
-const checkEmailExists = (address) => {
+const getUserWithEmail = (address) => {
   for (let user in users) {
     if (users[user].email === address) {
-      return [true, user];
+      return user;
     }
   }
-  return [false, null];
+  return null;
 };
 
 // Return an array of urls associated with the queried user.
@@ -64,6 +68,9 @@ app.use(bodyParser.urlencoded({extended: true}));
 
 // Hash a random string for the cookie secret key
 app.use(cookieSession({name: 'session', secret: bcrypt.hashSync(generateRandomString(), 10)}));
+
+// Method override with query
+app.use(methodOverride('_method'));
 
 // If already logged in, /, login, and register redirect to /urls
 app.get("/", (req, res) => {
@@ -97,36 +104,6 @@ app.get("/register", (req, res) => {
       err: "none"
     };
     res.render("accounts", templateVars);
-  }
-});
-
-// For a valid link, its viewcount is incremented, and it adds the url key
-// to a cookie to keep track of specific users. For each short link, if its
-// whole id matches some part of the string in the cookie, then the user is
-// considered to have visited it before.
-app.get("/u/:shortURL", (req, res) => {
-  if (!urlDatabase[req.params.shortURL]) {
-    res.redirect("/notfound");
-  } else {
-    const longURL = urlDatabase[req.params.shortURL].url;
-    const shortURL = req.params.shortURL;
-    if (!urlDatabase[shortURL].count) {
-      urlDatabase[shortURL].count = 0;
-      urlDatabase[shortURL].unique = 0;
-    }
-    urlDatabase[req.params.shortURL].count += 1;
-    if (!req.session.visit) {
-      req.session.visit = shortURL;
-      urlDatabase[shortURL].unique += 1;
-    } else {
-      let visited = req.session.visit;
-      if (!visited.includes(shortURL)) {
-        visited += shortURL;
-        req.session.visit = visited;
-        urlDatabase[shortURL].unique += 1;
-      }
-    }
-    res.redirect(longURL);
   }
 });
 
@@ -177,7 +154,8 @@ app.get("/urls/:shortURL", (req, res) => {
       user: users[req.session.user_id],
       host: req.hostname,
       shortURL: req.params.shortURL,
-      urls: urlDatabase[req.params.shortURL]
+      urls: urlDatabase[req.params.shortURL],
+      guestbook: visitors
     };
     res.render("urls_show", templateVars);
   }
@@ -185,6 +163,39 @@ app.get("/urls/:shortURL", (req, res) => {
 
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
+});
+
+// For a valid link, its viewcount is incremented, and it adds the url key
+// to a cookie to keep track of specific users. For each short link, if its
+// id matches an id in the cookie (all of which are separated by spaces),
+// then the user is considered to have visited it before.
+app.get("/u/:shortURL", (req, res) => {
+  if (!urlDatabase[req.params.shortURL]) {
+    res.redirect("/notfound");
+  } else {
+    const longURL = urlDatabase[req.params.shortURL].url;
+    const shortURL = req.params.shortURL;
+    if (!urlDatabase[shortURL].count) {
+      urlDatabase[shortURL].count = 0;
+      urlDatabase[shortURL].unique = 0;
+    }
+    urlDatabase[req.params.shortURL].count += 1;
+
+    let visited = req.session.visit;
+    if (!visited) {
+      req.session.visit = shortURL;
+      urlDatabase[shortURL].unique += 1;
+      visitors[generateRandomString()] = new Date();
+    } else {
+      if (!visited.includes(shortURL)) {
+        visited += ` ${shortURL}`;
+        req.session.visit = visited;
+        urlDatabase[shortURL].unique += 1;
+        visitors[generateRandomString()] = new Date();
+      }
+    }
+    res.redirect(longURL);
+  }
 });
 
 // 404 page for all invalid paths
@@ -197,7 +208,7 @@ app.get("*", (req, res) => {
 });
 
 app.post("/login", (req, res) => {
-  let existingUser = checkEmailExists(req.body.email);
+  let existingUser = getUserWithEmail(req.body.email);
   let templateVars = {
     user: users[req.session.user_id],
     action: "login",
@@ -205,9 +216,9 @@ app.post("/login", (req, res) => {
   };
 
   // login if correct user and password, else return relevant error
-  if (existingUser[0]) {
-    if (bcrypt.compareSync(req.body.password, users[existingUser[1]].password)) {
-      req.session.user_id = users[existingUser[1]].id;
+  if (existingUser !== null) {
+    if (bcrypt.compareSync(req.body.password, users[existingUser].password)) {
+      req.session.user_id = users[existingUser].id;
       res.redirect("/urls");
     } else {
       templateVars.err = "wrong password";
@@ -224,7 +235,7 @@ app.post("/logout", (req, res) => {
 });
 
 app.post("/register", (req, res) => {
-  let existingUser = checkEmailExists(req.body.email);
+  let existingUser = getUserWithEmail(req.body.email);
   let templateVars = {
     user: users[req.session.user_id],
     action: "register",
@@ -233,7 +244,7 @@ app.post("/register", (req, res) => {
 
   // register if not existing user and with valid email and password, else return relevant error
   // check for valid email with format (anything)@(anything).(anything)
-  if (existingUser[0]) {
+  if (existingUser !== null) {
     templateVars.err = "existing user";
   } else if (!req.body.email.match(/^.+@.+\..+/) || req.body.email.length === 0 || req.body.password.length === 0) {
     templateVars.err = "invalid email or password";
@@ -259,7 +270,7 @@ app.post("/urls", (req, res) => {
   }
 });
 
-app.post("/urls/:shortURL", (req, res) => {
+app.put("/urls/:shortURL", (req, res) => {
   // don't allow another user to change the link
   if (!users[req.session.user_id]) {
     res.redirect(401, "/login");
@@ -275,7 +286,7 @@ app.post("/urls/:shortURL", (req, res) => {
   }
 });
 
-app.post("/urls/:shortURL/delete", (req, res) => {
+app.delete("/urls/:shortURL/delete", (req, res) => {
   // don't allow another user to delete the link
   if (!users[req.session.user_id]) {
     res.redirect(401, "/login");
