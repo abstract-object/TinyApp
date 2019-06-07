@@ -15,23 +15,23 @@
       <button type="submit" class="btn btn-outline-dark btn-sm"><%= action %></button>
     </div>
   </form>
-  <% if (err !== "none") { %>
+  <% if (err) { %>
   <h5><i class="fa fa-user-times"></i></h5>
   <% } %>
   <p>
-  <% if (err === "wrong password") { %>
+  <% if (err === "wrong-password") { %>
     incorrect password, try again
   <% } %>
-  <% if (err === "no user") { %>
-      no account found for that email
+  <% if (err === "no-user") { %>
+    no account found for that email
   <% } %>
-  <% if (err === "existing user") { %>
+  <% if (err === "existing-user") { %>
     an account with that email already exists
   <% } %>
-  <% if (err === "invalid email or password") { %>
+  <% if (err === "invalid-params") { %>
     you must enter a valid email address and a password
   <% } %>
-  <% if (err === "not logged in") { %>
+  <% if (err === "no-login") { %>
     you must login to access that page
   <% } %>
   </p>

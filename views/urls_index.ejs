@@ -5,6 +5,12 @@
 </head>
 <body style="font-size: 15px; padding: 50px; text-align: center">
   <% include ./partials/_header %>
+
+  <% if (err) { %>
+    <h5><i class="fa fa-ban"></i></h5>
+    <p>you don't have permission to modify that link</p>
+  <% } %>
+
   <h2><i class="fa fa-list"></i> my links</h2>
     <% let hasLink = false %>
     <% if (!user) { %>
@@ -24,6 +30,7 @@
           <br>
         <% } %>
       <% } %>
+
       <% if (!hasLink) { %>
         you currently have no links<br>
         it might be a good idea to take one with you, it's dangerous to go alone

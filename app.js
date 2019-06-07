@@ -60,6 +60,30 @@ const urlsForUser = (id) => {
   return ownURL;
 };
 
+const errorHandling = (message) => {
+  if (!message) {
+    return 200;
+  }
+
+  if (message === "no-login") {
+    return 401;
+  } else if (message === "existing-user" || "invalid-params") {
+    return 400;
+  } else {
+    return 403;
+  }
+};
+
+const getTemplateVars = (id, path, query) => {
+  let output = {
+    user: users[id],
+    action: path,
+    err: query
+  };
+
+  return output;
+};
+
 const app = express();
 app.set("view engine", "ejs");
 app.use(bodyParser.urlencoded({extended: true}));
@@ -73,7 +97,7 @@ app.use(methodOverride('_method'));
 // If already logged in, /, login, and register redirect to /urls
 app.get("/", (req, res) => {
   if (users[req.session.user_id]) {
-    res.redirect("/urls");
+    return res.redirect("/urls");
   } else {
     res.redirect("/login");
   }
@@ -81,80 +105,62 @@ app.get("/", (req, res) => {
 
 app.get("/login", (req, res) => {
   if (users[req.session.user_id]) {
-    res.redirect("/urls");
-  } else {
-    let templateVars = {
-      user: users[req.session.user_id],
-      action: "login",
-      err: "none"
-    };
-    res.render("accounts", templateVars);
+    return res.redirect("/urls");
   }
+
+  let templateVars = getTemplateVars(req.session.user_id, req.path.substring(1), req.query.err);
+
+  let code = errorHandling(templateVars.err);
+
+  res.status(code).render("accounts", templateVars);
 })
 
 app.get("/register", (req, res) => {
   if (users[req.session.user_id]) {
-    res.redirect("/urls");
-  } else {
-    let templateVars = {
-      user: users[req.session.user_id],
-      action: "register",
-      err: "none"
-    };
-    res.render("accounts", templateVars);
+    return res.redirect("/urls");
   }
+
+  let templateVars = getTemplateVars(req.session.user_id, req.path.substring(1), req.query.err);
+
+  let code = errorHandling(templateVars.err);
+
+  res.status(code).render("accounts", templateVars);
 });
 
 app.get("/urls", (req, res) => {
-  let templateVars = {
-    user: users[req.session.user_id],
-    urls: urlDatabase
-  };
-  res.render("urls_index", templateVars);
+  let templateVars = getTemplateVars(req.session.user_id, req.path.substring(1), req.query.err);
+  templateVars.urls = urlDatabase;
+
+  let code = errorHandling(templateVars.err);
+
+  res.status(code).render("urls_index", templateVars);
 });
 
 // If not logged in, the following pages "redirect" to login page...
 // they render instead of redirect, to give custom error messages
 app.get("/urls/new", (req, res) => {
   if (!users[req.session.user_id]) {
-    let templateVars = {
-      user: users[req.session.user_id],
-      action: "login",
-      err: "not logged in"
-    };
-    res.status(401).render("accounts", templateVars);
+    return res.redirect("/login?err=no-login");
   } else {
-    let templateVars = {
-      user: users[req.session.user_id]
-    };
+    let templateVars = getTemplateVars(req.session.user_id, null, null);
     res.render("urls_new", templateVars);
   }
 });
 
 app.get("/urls/:shortURL", (req, res) => {
   if (!urlDatabase[req.params.shortURL]) {
-    res.redirect("/notfound");
+    return res.redirect("/notfound");
   } else if (!users[req.session.user_id]) {
-    let templateVars = {
-      user: users[req.session.user_id],
-      action: "login",
-      err: "not logged in"
-    };
-    res.status(401).render("accounts", templateVars);
+    return res.redirect("/login?err=no-login");
   } else if (req.session.user_id !== urlDatabase[req.params.shortURL].userId) {
-    let templateVars = {
-      user: users[req.session.user_id],
-      err: "wrong user"
-    };
-    res.status(403).render("misc", templateVars);
+    return res.redirect("/urls?err=wrong-user");
   } else {
-    let templateVars = {
-      user: users[req.session.user_id],
-      host: req.hostname,
-      shortURL: req.params.shortURL,
-      urls: urlDatabase[req.params.shortURL],
-      guestbook: visitors[req.params.shortURL]
-    };
+    let shortURL = req.params.shortURL;
+    let templateVars = getTemplateVars(req.session.user_id, null, null);
+    templateVars.host = req.hostname;
+    templateVars.shortURL = shortURL;
+    templateVars.urls = urlDatabase[shortURL];
+    templateVars.guestbook = visitors[shortURL];
     res.render("urls_show", templateVars);
   }
 });
@@ -169,64 +175,50 @@ app.get("/urls.json", (req, res) => {
 // then the user is considered to have visited it before.
 app.get("/u/:shortURL", (req, res) => {
   if (!urlDatabase[req.params.shortURL]) {
-    res.redirect("/notfound");
-  } else {
-    const longURL = urlDatabase[req.params.shortURL].url;
-    const shortURL = req.params.shortURL;
-    if (!urlDatabase[shortURL].count) {
-      urlDatabase[shortURL].count = 0;
-      urlDatabase[shortURL].unique = 0;
-    }
-    urlDatabase[req.params.shortURL].count += 1;
-
-    let visited = req.session.visit;
-    if (!visited) {
-      req.session.visit = shortURL;
-      urlDatabase[shortURL].unique += 1;
-      visitors[req.params.shortURL] = {};
-      visitors[req.params.shortURL][generateRandomString()] = new Date();
-    } else {
-      if (!visited.includes(shortURL)) {
-        visited += ` ${shortURL}`;
-        req.session.visit = visited;
-        urlDatabase[shortURL].unique += 1;
-        visitors[req.params.shortURL] = {};
-        visitors[req.params.shortURL][generateRandomString()] = new Date();
-      }
-    }
-    res.redirect(longURL);
+    return res.redirect("/notfound");
   }
+
+  let longURL = urlDatabase[req.params.shortURL].url;
+  let shortURL = req.params.shortURL;
+
+  if (!urlDatabase[shortURL].count) {
+    urlDatabase[shortURL].count = 0;
+    urlDatabase[shortURL].unique = 0;
+  }
+  urlDatabase[shortURL].count += 1;
+
+  let visited = req.session.visit;
+  if (!visited || !visited.includes(shortURL)) {
+    let visitorId = generateRandomString();
+    visited += ` ${shortURL}`;
+    req.session.visit = visited;
+    urlDatabase[shortURL].unique += 1;
+    visitors[req.params.shortURL] = {visitorId: new Date()};
+  }
+  res.redirect(longURL);
 });
 
 // 404 page for all invalid paths
 app.get("*", (req, res) => {
-  let templateVars = {
-    user: users[req.session.user_id],
-    err: "not found"
-  };
+  let templateVars = getTemplateVars(req.session.user_id, null, null);
   res.status(404).render("misc", templateVars);
 });
 
 app.post("/login", (req, res) => {
   let existingUser = getUserWithEmail(req.body.email);
-  let templateVars = {
-    user: users[req.session.user_id],
-    action: "login",
-    err: "none"
-  };
-
+  let err;
   // login if correct user and password, else return relevant error
-  if (existingUser !== null) {
+  if (existingUser) {
     if (bcrypt.compareSync(req.body.password, users[existingUser].password)) {
       req.session.user_id = users[existingUser].id;
-      res.redirect("/urls");
+      return res.redirect("/urls");
     } else {
-      templateVars.err = "wrong password";
+      err = "wrong-password";
     }
   } else {
-    templateVars.err = "no user";
+    err = "no-user";
   }
-  res.status(403).render("accounts", templateVars);
+  res.redirect(`/login?err=${err}`);
 });
 
 app.post("/logout", (req, res) => {
@@ -236,32 +228,31 @@ app.post("/logout", (req, res) => {
 
 app.post("/register", (req, res) => {
   let existingUser = getUserWithEmail(req.body.email);
-  let templateVars = {
-    user: users[req.session.user_id],
-    action: "register",
-    err: "none"
-  };
+  let err;
 
   // register if not existing user and with valid email and password, else return relevant error
   // check for valid email with format (anything)@(anything).(anything)
-  if (existingUser !== null) {
-    templateVars.err = "existing user";
+  if (existingUser) {
+    err = "existing-user";
   } else if (!req.body.email.match(/^.+@.+\..+/) || req.body.email.length === 0 || req.body.password.length === 0) {
-    templateVars.err = "invalid email or password";
-  } else {
-    // newly registered user gets random string as id and has their password hashed
-    let newId = generateRandomString();
-    users[newId] = {id: newId, email: req.body.email, password: bcrypt.hashSync(req.body.password, 10)};
-    req.session.user_id = newId;
-    res.redirect("/urls");
+    err = "invalid-params";
   }
-  res.status(400).render("accounts", templateVars);
+
+  if (err) {
+    return res.redirect(`/register?err=${err}`);
+  }
+
+  // newly registered user gets random string as id and has their password hashed
+  let newId = generateRandomString();
+  users[newId] = {id: newId, email: req.body.email, password: bcrypt.hashSync(req.body.password, 10)};
+  req.session.user_id = newId;
+  res.redirect("/urls");
 });
 
 // redirect to login if not logged in for the following links
 app.post("/urls", (req, res) => {
   if (!users[req.session.user_id]) {
-    res.redirect(401, "/login");
+    return res.redirect("/login?err=no-login");
   } else {
     // new link; generate random string for short url, add current time
     let shortURL = generateRandomString();
@@ -271,33 +262,33 @@ app.post("/urls", (req, res) => {
 });
 
 app.put("/urls/:shortURL", (req, res) => {
+  let shortURL = req.params.shortURL;
   // don't allow another user to change the link
   if (!users[req.session.user_id]) {
-    res.redirect(401, "/login");
-  } else if (req.session.user_id !== urlDatabase[req.params.shortURL].userId) {
-    res.redirect(403, "/error");
+    return res.redirect("/login?err=no-login");
+  } else if (req.session.user_id !== urlDatabase[shortURL].userId) {
+    return res.redirect("/urls?err=wrong-user");
   } else {
     // updating a url is like creating a new link, but keeping the exisitng short url
     // reset count, unique visitors, and date created
-    addLongURL(req.params.shortURL, req.body.longURL, req.session.user_id, new Date());
-    urlDatabase[req.params.shortURL].count = 0;
-    urlDatabase[req.params.shortURL].unique = 0;
+    addLongURL(shortURL, req.body.longURL, req.session.user_id, new Date());
     res.redirect("/urls");
   }
 });
 
 app.delete("/urls/:shortURL/delete", (req, res) => {
+  let shortURL = req.params.shortURL;
+  let id = req.session.user_id;
+
   // don't allow another user to delete the link
-  if (!users[req.session.user_id]) {
-    res.redirect(401, "/login");
-  } else if (req.session.user_id !== urlDatabase[req.params.shortURL].userId) {
-    res.redirect(403, "/error");
-  } else {
-    if (urlDatabase[req.params.shortURL]) {
-      delete urlDatabase[req.params.shortURL];
-    }
-    res.redirect("/urls");
+  if (!users[id]) {
+    return res.redirect("/login?err=no-login");
+  } else if (id !== urlDatabase[shortURL].userId) {
+    return res.redirect("/urls?err=wrong-user");
   }
+
+  delete urlDatabase[shortURL];
+  res.redirect("/urls");
 });
 
 app.listen(PORT, () => {
