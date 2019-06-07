@@ -27,8 +27,6 @@ const generateRandomString = () => {
 };
 
 // Create a new entry or update an existing one in the url database. The long url, if
-
-
 // there is no protocol, will automatically use http:// so that the redirection can
 // be performed successfully.
 const addLongURL = (shortURL, longURL, id, date) => {
