@@ -3,18 +3,10 @@
 <head>
   <% include ./partials/_head %>
 </head>
-<body style="font-size: 15px; padding: 50px; text-align:center">
+<body style="font-size: 15px; padding: 50px; text-align: center">
   <% include ./partials/_header %>
-  <h3><i class="fa fa-user-circle"></i> <%= action %></h3>
-  <form class="form-inline" action="/<%= action %>" method="POST">
-    <div class="form-group mb-2" style="margin: 0 auto">
-      <label for="email">email:</label>
-      <input class="form-control" type="email" name="email" style="width: 300px; margin: 1em">
-      <label for="password">password:</label>
-      <input class="form-control" type="password" name="password" style="width: 300px;margin: 1em">
-      <button type="submit" class="btn btn-outline-dark btn-sm"><%= action %></button>
-    </div>
-  </form>
+
+  <!-- Display error messages if there is an error specified by the query string. -->
   <% if (err) { %>
   <h5><i class="fa fa-user-times"></i></h5>
   <% } %>
@@ -23,7 +15,7 @@
     incorrect password, try again
   <% } %>
   <% if (err === "no-user") { %>
-    no account found for that email
+    account not found
   <% } %>
   <% if (err === "existing-user") { %>
     an account with that email already exists
@@ -35,5 +27,20 @@
     you must login to access that page
   <% } %>
   </p>
+
+  <!-- This page renders both login and register pages. -->
+  <h3><i class="fa fa-user-circle"></i> <%= action %></h3>
+  <form class="form-inline" action="/<%= action %>" method="POST">
+
+    <!-- Center everything! -->
+    <div class="form-group mb-2" style="margin: 0 auto">
+      <label for="email">email:</label>
+      <input class="form-control" type="email" name="email" placeholder="email" style="width: 300px; margin: 1em">
+      <label for="password">password:</label>
+      <input class="form-control" type="password" name="password" placeholder="password" style="width: 300px;margin: 1em">
+      <button type="submit" class="btn btn-outline-dark btn-sm"><%= action %></button>
+    </div>
+  </form>
+
 </body>
 </html>

@@ -1,7 +1,12 @@
 <h1><a href="/"><i class="fa fa-external-link"></i></a>inyapp</h1>
+
 <div style="margin: 0 auto">
+
+  <!-- Display email if logged in. -->
   <% if (user) { %><h5>welcome, <%= user.email %></h5><% } %>
-  <span class="btn-group" role="group" aria-label="options">
+
+  <!-- Have login and register buttons beside each other. -->
+  <span class="btn-group" role="group" aria-label="Account options">
   <% if (!user) { %>
     <form method="GET" action="/login">
       <button type="submit" class="btn btn-outline-dark btn-sm">login</button>
