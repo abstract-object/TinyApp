@@ -107,23 +107,27 @@ app.get("/", (req, res) => {
 });
 
 app.get("/login", (req, res) => {
-  if (users[req.session.user_id]) {
+  let id = req.session.user_id;
+
+  if (users[id]) {
     return res.redirect("/urls");
   }
 
   // Render appropriate error messages if there is a query string specifying an error.
-  let templateVars = getTemplateVars(req.session.user_id, req.path.substring(1), req.query.err);
+  let templateVars = getTemplateVars(id, req.path.substring(1), req.query.err);
   let code = errorHandling(templateVars.err);
   res.status(code).render("accounts", templateVars);
 });
 
 app.get("/register", (req, res) => {
-  if (users[req.session.user_id]) {
+  let id = req.session.user_id;
+
+  if (users[id]) {
     return res.redirect("/urls");
   }
 
   // Render appropriate error messages if there is a query string specifying an error.
-  let templateVars = getTemplateVars(req.session.user_id, req.path.substring(1), req.query.err);
+  let templateVars = getTemplateVars(id, req.path.substring(1), req.query.err);
   let code = errorHandling(templateVars.err);
   res.status(code).render("accounts", templateVars);
 });
@@ -133,7 +137,7 @@ app.get("/register", (req, res) => {
 // message, merely a message suggesting that the user log in.
 app.get("/urls", (req, res) => {
   let id = req.session.user_id;
-  let templateVars = getTemplateVars(req.session.user_id, req.path.substring(1), req.query.err);
+  let templateVars = getTemplateVars(id, req.path.substring(1), req.query.err);
   templateVars.urls = urlsForUser(id);
   let code = errorHandling(templateVars.err);
   res.status(code).render("urls_index", templateVars);
@@ -141,11 +145,13 @@ app.get("/urls", (req, res) => {
 
 // If not logged in, the following pages redirect to the login page with a 401 + custom error message.
 app.get("/urls/new", (req, res) => {
-  if (!users[req.session.user_id]) {
+  let id = req.session.user_id;
+
+  if (!users[id]) {
     return res.redirect("/login?err=no-login");
   }
 
-  let templateVars = getTemplateVars(req.session.user_id, null, null);
+  let templateVars = getTemplateVars(id, null, null);
   res.render("urls_new", templateVars);
 });
 
@@ -178,12 +184,12 @@ app.get("/urls/:shortURL", (req, res) => {
 // id matches an id in the cookie (all of which are separated by spaces),
 // then the user is considered to have visited it before.
 app.get("/u/:shortURL", (req, res) => {
-  if (!urlDatabase[req.params.shortURL]) {
-    return res.redirect("/notfound");
-  }
-
   let longURL = urlDatabase[req.params.shortURL].url;
   let shortURL = req.params.shortURL;
+
+  if (!urlDatabase[shortURL]) {
+    return res.redirect("/notfound");
+  }
 
   // Init both count vars, always count up total view by 1.
   if (!urlDatabase[shortURL].count) {
@@ -277,28 +283,31 @@ app.post("/register", (req, res) => {
 // Redirect to login with 401 if not logged in. If already logged in and trying to modify
 // a link of another account, redirect and give 403.
 app.post("/urls", (req, res) => {
-  if (!users[req.session.user_id]) {
+  let id = req.session.user_id;
+
+  if (!users[id]) {
     return res.redirect("/login?err=no-login");
   }
 
   // New link; generate random string for short url, add current time.
   let shortURL = generateRandomString();
-  addLongURL(shortURL, req.body.longURL, req.session.user_id, new Date());
+  addLongURL(shortURL, req.body.longURL, id, new Date());
   res.redirect("/urls/" + shortURL);
 });
 
 app.put("/urls/:shortURL", (req, res) => {
   let shortURL = req.params.shortURL;
+  let id = req.session.user_id;
 
-  if (!users[req.session.user_id]) {
+  if (!users[id]) {
     return res.redirect("/login?err=no-login");
-  } else if (req.session.user_id !== urlDatabase[shortURL].userId) {
+  } else if (id !== urlDatabase[shortURL].userId) {
     return res.redirect("/urls?err=wrong-user");
   }
 
   // Updating a url is like creating a new link, but keeping the existng short url.
   // Reset the count, unique visitors, and date created and change the target url.
-  addLongURL(shortURL, req.body.longURL, req.session.user_id, new Date());
+  addLongURL(shortURL, req.body.longURL, id, new Date());
   res.redirect("/urls");
 });
 
