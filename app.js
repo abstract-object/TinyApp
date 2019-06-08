@@ -162,9 +162,7 @@ app.get("/urls/:shortURL", (req, res) => {
   let shortURL = req.params.shortURL;
   let id = req.session.user_id;
 
-  if (!urlDatabase[shortURL]) {
-    return res.redirect("/notfound");
-  } else if (!users[id]) {
+  if (!users[id]) {
     return res.redirect("/login?err=no-login");
   } else if (id !== urlDatabase[shortURL].userId) {
     return res.redirect("/urls?err=wrong-user");
@@ -186,10 +184,6 @@ app.get("/urls/:shortURL", (req, res) => {
 app.get("/u/:shortURL", (req, res) => {
   let longURL = urlDatabase[req.params.shortURL].url;
   let shortURL = req.params.shortURL;
-
-  if (!urlDatabase[shortURL]) {
-    return res.redirect("/notfound");
-  }
 
   // Init both count vars, always count up total view by 1.
   if (!urlDatabase[shortURL].count) {
@@ -226,10 +220,14 @@ app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
 
-// Render 404 page for all invalid paths.
-app.get("*", (req, res) => {
+// Redirect to /notfound, then render 404 page for all invalid paths.
+app.get("/notfound", (req, res) => {
   let templateVars = getTemplateVars(req.session.user_id, null, null);
   res.status(404).render("misc", templateVars);
+});
+
+app.get("*", (req, res) => {
+  res.redirect("/notfound");
 });
 
 // Log in user, or else give appropriate error depending on what user did incorrectly.
